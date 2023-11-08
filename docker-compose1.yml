@@ -1,0 +1,53 @@
+version: '3.9'
+
+services:
+  speedtest-tracker:
+    image: ghcr.io/alexjustesen/speedtest-tracker:latest
+    container_name: speedtest-tracker
+    environment:
+      - PUID=1026
+      - PGID=100
+      - DB_CONNECTION=mysql
+      - DB_HOST=db
+      - DB_PORT=3306
+      - DB_DATABASE=speedtest_tracker
+      - DB_USERNAME=speedy
+      - DB_PASSWORD=speedypass
+    healthcheck:
+      test: curl -f http://localhost:80/ || exit 1
+    volumes:
+      - /data/speedtest:/config:rw
+    ports:
+      - 8999:80
+      - 8995:9000
+    restart: on-failure:5
+    depends_on:
+      - db
+    networks:
+      - sail
+  
+  db:
+    image: mariadb:jammy
+    container_name: speedtest-db
+    environment:
+      - TZ=Asia/Kuching
+      - MARIADB_DATABASE=speedtest_tracker
+      - MARIADB_USER=speedy
+      - MARIADB_PASSWORD=speedypass
+      - MARIADB_ROOT_PASSWORD=speedypass
+    volumes:
+      - /data/speedtestdb:/var/lib/mysql:rw
+      - /data/speedtestdb:/etc/mysql/conf.d:rw
+    ports:
+      - 3306:3306
+    mem_limit: 1g
+    cpu_shares: 768
+    security_opt:
+      - no-new-privileges:false
+    restart: on-failure:5
+    networks:
+      - sail
+
+networks:
+  sail:
+    driver: bridge
